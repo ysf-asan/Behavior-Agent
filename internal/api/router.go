@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tubitak/behaviordna/agent/internal/features"
-	"github.com/tubitak/behaviordna/agent/internal/ml"
-	"github.com/tubitak/behaviordna/agent/internal/store"
+	"github.com/ysf-asan/behavior-agent/internal/features"
+	"github.com/ysf-asan/behavior-agent/internal/ml"
+	"github.com/ysf-asan/behavior-agent/internal/store"
 )
 
 type AgentAPI struct {

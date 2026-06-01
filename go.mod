@@ -1,4 +1,4 @@
-module github.com/tubitak/behaviordna/agent
+module github.com/ysf-asan/behavior-agent
 
 go 1.21
 
