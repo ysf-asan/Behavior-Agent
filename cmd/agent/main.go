@@ -1,3 +1,5 @@
+//go:build windows
+
 package main
 
 import (
@@ -8,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -146,8 +149,12 @@ func (app *App) processWindow() {
 			if err := pm.Train(); err == nil {
 				profile := pm.GetProfile()
 				if profile != nil {
-					data, _ := json.Marshal(profile)
-					app.store.SaveProfileBlob(context.Background(), "default", string(data))
+					data, err := json.Marshal(profile)
+					if err == nil {
+						if err := app.store.SaveProfileBlob(context.Background(), "default", string(data)); err != nil {
+							log.Printf("profil kaydedilemedi: %v", err)
+						}
+					}
 				}
 				log.Printf("profil otomatik egitildi (%d ornek)", pm.SampleCount())
 			}
@@ -202,8 +209,12 @@ func doTrain(app *App) {
 
 	profile := pm.GetProfile()
 	if profile != nil {
-		data, _ := json.Marshal(profile)
-		app.store.SaveProfileBlob(context.Background(), "default", string(data))
+		data, err := json.Marshal(profile)
+		if err == nil {
+			if err := app.store.SaveProfileBlob(context.Background(), "default", string(data)); err != nil {
+				log.Printf("profil kaydedilemedi: %v", err)
+			}
+		}
 	}
 
 	app.updateTrayIcon()
@@ -212,7 +223,9 @@ func doTrain(app *App) {
 
 func doReset(app *App) {
 	app.profileMgr.Reset()
-	app.store.SaveProfileBlob(context.Background(), "default", "")
+	if err := app.store.SaveProfileBlob(context.Background(), "default", ""); err != nil {
+		log.Printf("profil silinemedi: %v", err)
+	}
 	app.updateTrayIcon()
 	log.Println("profil sifirlandi")
 }
@@ -241,7 +254,7 @@ func (app *App) updateTrayIcon() {
 	profile := pm.GetProfile()
 
 	if profile == nil || profile.Status != "ready" {
-		app.tray.SetTooltip("BehaviorDNA - Ogrenme Modu (" + itoa(pm.SampleCount()) + "/30)")
+		app.tray.SetTooltip("BehaviorDNA - Ogrenme Modu (" + strconv.Itoa(pm.SampleCount()) + "/30)")
 		app.tray.SetIcon("yellow")
 		return
 	}
@@ -270,16 +283,4 @@ func closeSafe(ch chan struct{}) {
 	default:
 		close(ch)
 	}
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	s := ""
-	for n > 0 {
-		s = string(rune('0'+n%10)) + s
-		n /= 10
-	}
-	return s
 }

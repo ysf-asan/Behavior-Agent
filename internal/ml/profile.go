@@ -3,6 +3,7 @@ package ml
 import (
 	"errors"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -30,6 +31,7 @@ type RiskResult struct {
 }
 
 type ProfileManager struct {
+	mu       sync.Mutex
 	profile  *BehavioralProfile
 	features [][]float64
 }
@@ -41,22 +43,32 @@ func NewProfileManager() *ProfileManager {
 }
 
 func (pm *ProfileManager) LoadProfile(p *BehavioralProfile) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	pm.profile = p
 }
 
 func (pm *ProfileManager) GetProfile() *BehavioralProfile {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	return pm.profile
 }
 
 func (pm *ProfileManager) AddSample(features []float64) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	pm.features = append(pm.features, features)
 }
 
 func (pm *ProfileManager) SampleCount() int {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	return len(pm.features)
 }
 
 func (pm *ProfileManager) Train() error {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	if len(pm.features) < 30 {
 		return errors.New("insufficient samples: need at least 30")
 	}
@@ -106,6 +118,8 @@ func (pm *ProfileManager) Train() error {
 }
 
 func (pm *ProfileManager) Predict(features []float64) (*RiskResult, error) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	if pm.profile == nil || pm.profile.Status != "ready" || pm.profile.IsolationForest == nil {
 		return nil, errors.New("profile not ready")
 	}
@@ -134,11 +148,15 @@ func (pm *ProfileManager) Predict(features []float64) (*RiskResult, error) {
 }
 
 func (pm *ProfileManager) Reset() {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	pm.profile = nil
 	pm.features = make([][]float64, 0)
 }
 
 func (pm *ProfileManager) Normalize(features []float64) []float64 {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
 	if pm.profile == nil || pm.profile.FeatureStats == nil {
 		result := make([]float64, len(features))
 		copy(result, features)

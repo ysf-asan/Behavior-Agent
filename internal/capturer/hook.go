@@ -2,6 +2,7 @@ package capturer
 
 import (
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -70,10 +71,19 @@ var (
 )
 
 var (
-	current       *Capturer
+	currentVal   atomic.Value
 	kbCallback    uintptr
 	mouseCallback uintptr
 )
+
+func loadCurrent() *Capturer {
+	c, _ := currentVal.Load().(*Capturer)
+	return c
+}
+
+func storeCurrent(c *Capturer) {
+	currentVal.Store(c)
+}
 
 func init() {
 	kbCallback = syscall.NewCallback(keyboardHookProc)
@@ -81,7 +91,7 @@ func init() {
 }
 
 func keyboardHookProc(nCode int, wParam, lParam uintptr) uintptr {
-	c := current
+	c := loadCurrent()
 	if c == nil {
 		ret, _, _ := procCallNextHookEx.Call(0, uintptr(nCode), wParam, lParam)
 		return ret
@@ -125,7 +135,7 @@ func keyboardHookProc(nCode int, wParam, lParam uintptr) uintptr {
 }
 
 func mouseHookProc(nCode int, wParam, lParam uintptr) uintptr {
-	c := current
+	c := loadCurrent()
 	if c == nil {
 		ret, _, _ := procCallNextHookEx.Call(0, uintptr(nCode), wParam, lParam)
 		return ret
@@ -266,11 +276,11 @@ func (c *Capturer) Start() error {
 	if c.running {
 		return nil
 	}
-	current = c
+	storeCurrent(c)
 	hook, _, err := procSetWindowsHookExW.Call(
 		WH_KEYBOARD_LL, kbCallback, 0, 0)
 	if hook == 0 {
-		current = nil
+		storeCurrent(nil)
 		return err
 	}
 	c.kbHook = hook
@@ -279,7 +289,7 @@ func (c *Capturer) Start() error {
 	if hook == 0 {
 		procUnhookWindowsHookEx.Call(c.kbHook)
 		c.kbHook = 0
-		current = nil
+		storeCurrent(nil)
 		return err
 	}
 	c.mouseHook = hook
@@ -303,8 +313,7 @@ func (c *Capturer) Stop() error {
 		c.mouseHook = 0
 	}
 	c.running = false
-	close(c.Events)
-	current = nil
+	storeCurrent(nil)
 	return nil
 }
 

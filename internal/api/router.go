@@ -63,14 +63,30 @@ func New(port string, st *store.SQLiteStore, pm *ml.ProfileManager, ext *feature
 		opt(a)
 	}
 	a.router.Use(gin.Recovery())
-	a.router.Use(corsMiddleware())
+	a.router.Use(corsMiddleware(port))
 	a.setupRoutes()
 	return a
 }
 
-func corsMiddleware() gin.HandlerFunc {
+func corsMiddleware(port string) gin.HandlerFunc {
+	origins := []string{
+		"http://localhost:" + port,
+		"http://127.0.0.1:" + port,
+	}
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		origin := c.GetHeader("Origin")
+		allowed := false
+		for _, o := range origins {
+			if origin == o {
+				allowed = true
+				break
+			}
+		}
+		if allowed {
+			c.Header("Access-Control-Allow-Origin", origin)
+		} else if origin == "" {
+			c.Header("Access-Control-Allow-Origin", origins[0])
+		}
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if c.Request.Method == "OPTIONS" {

@@ -12,25 +12,6 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type Store interface {
-	CreateSessionTable(ctx context.Context) error
-	SaveSession(ctx context.Context, session interface{}) error
-	GetSession(ctx context.Context, sessionID string) (interface{}, error)
-	UpdateSession(ctx context.Context, session interface{}) error
-	SaveEvent(ctx context.Context, event interface{}) error
-	GetEvents(ctx context.Context, sessionID string, limit int32, nextToken *string) ([]interface{}, *string, error)
-	SaveRiskScore(ctx context.Context, sessionID string, score interface{}) error
-	GetLatestRiskScore(ctx context.Context, sessionID string) (interface{}, error)
-	GetRiskHistory(ctx context.Context, sessionID string, limit int32) ([]interface{}, error)
-	SaveUserProfile(ctx context.Context, profile interface{}) error
-	GetUserProfile(ctx context.Context, userID string) (interface{}, error)
-	ListUsers(ctx context.Context) ([]interface{}, error)
-	SaveProfileBlob(ctx context.Context, userID string, profileJSON string) error
-	GetProfileBlob(ctx context.Context, userID string) (string, error)
-	SaveSettings(ctx context.Context, key string, value string) error
-	GetSettings(ctx context.Context, key string) (string, error)
-}
-
 type SQLiteStore struct {
 	db *sql.DB
 }

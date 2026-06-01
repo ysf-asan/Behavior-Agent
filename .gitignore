@@ -1,4 +1,4 @@
-behavior-agent.exe
+*.exe
 behaviordna.db
 .vs/
 *.test

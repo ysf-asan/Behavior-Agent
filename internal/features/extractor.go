@@ -189,18 +189,18 @@ func insertionSort(a []float64) {
 
 func computeDwell(events []RawEvent) (mean, std, min, max, median, count float64) {
 	type keyDown struct {
-		key string
+		key float64
 		ts  int64
 	}
 	var pending []keyDown
 	var dwells []float64
 
 	for _, e := range events {
-		key := getString(e.Data, "key")
-		state := getString(e.Data, "state")
-		if state == "down" {
+		key := getFloat(e.Data, "vkCode")
+		action := getString(e.Data, "action")
+		if action == "down" {
 			pending = append(pending, keyDown{key, e.Timestamp})
-		} else if state == "up" {
+		} else if action == "up" {
 			for i, p := range pending {
 				if p.key == key {
 					dwell := float64(e.Timestamp-p.ts) / 1000
@@ -219,10 +219,10 @@ func computeFlight(events []RawEvent) (mean, std, min, max, median, count float6
 	var lastUp int64 = -1
 
 	for _, e := range events {
-		state := getString(e.Data, "state")
-		if state == "up" {
+		action := getString(e.Data, "action")
+		if action == "up" {
 			lastUp = e.Timestamp
-		} else if state == "down" && lastUp != -1 {
+		} else if action == "down" && lastUp != -1 {
 			flight := float64(e.Timestamp-lastUp) / 1000
 			flights = append(flights, flight)
 			lastUp = -1
@@ -233,13 +233,13 @@ func computeFlight(events []RawEvent) (mean, std, min, max, median, count float6
 
 func computeLatency(events []RawEvent) (mean, std, min, max, median, count float64) {
 	var latencies []float64
-	var lastKey string
+	var lastKey float64
 	var lastTime int64
 
 	for _, e := range events {
-		key := getString(e.Data, "key")
-		state := getString(e.Data, "state")
-		if state == "down" {
+		key := getFloat(e.Data, "vkCode")
+		action := getString(e.Data, "action")
+		if action == "down" {
 			if lastTime != 0 && key != lastKey {
 				lat := float64(e.Timestamp-lastTime) / 1000
 				latencies = append(latencies, lat)
